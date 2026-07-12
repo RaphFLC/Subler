@@ -33,6 +33,8 @@ class PrefsWindowController: NSWindowController, NSWindowDelegate {
                     item.image = NSImage(systemSymbolName: "doc.text.viewfinder", accessibilityDescription: "")
                 case advanced:
                     item.image = NSImage(systemSymbolName: "gearshape.2", accessibilityDescription: "")
+                case atmos:
+                    item.image = NSImage(systemSymbolName: "waveform", accessibilityDescription: "")
                 default:
                     item.image = NSImage(systemSymbolName: "placeholdertext.fill", accessibilityDescription: "")
                 }
@@ -57,6 +59,7 @@ class PrefsWindowController: NSWindowController, NSWindowDelegate {
     lazy var outputController: OutputPrefsViewController = { return OutputPrefsViewController() }()
     lazy var ocrController: OCRPrefsViewController = { return OCRPrefsViewController() }()
     lazy var advancedController: AdvancedPrefsViewController = { return AdvancedPrefsViewController() }()
+    lazy var atmosController: AtmosPrefsViewController = { return AtmosPrefsViewController() }()
 
     let general: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_GENERAL")
     let metadata: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_METADATA")
@@ -64,6 +67,7 @@ class PrefsWindowController: NSWindowController, NSWindowDelegate {
     let output: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_OUTPUT")
     let ocr: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_OCR")
     let advanced: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_ADVANCED")
+    let atmos: NSToolbarItem.Identifier = NSToolbarItem.Identifier("TOOLBAR_ATMOS")
 
     // MARK: Panel switching
 
@@ -74,6 +78,7 @@ class PrefsWindowController: NSWindowController, NSWindowDelegate {
         if identifier == output { return outputController.view }
         if identifier == ocr { return ocrController.view }
         if identifier == advanced { return advancedController.view }
+        if identifier == atmos { return atmosController.view }
         return nil
     }
 

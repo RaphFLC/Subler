@@ -8,6 +8,10 @@
 import Cocoa
 import MP42Foundation
 
+/// Action tag for re-encoding a TrueHD Atmos track to E-AC3 JOC.
+/// Kept well clear of the mixdown tags (1...5) and the AAC combos (6, 7).
+private let kFileImportAtmosActionTag: UInt = 100
+
 protocol FileImportControllerDelegate : AnyObject {
     func didSelect(tracks: [MP42Track], metadata: MP42Metadata?)
 }
@@ -125,7 +129,16 @@ final class FileImportController: ViewController, NSTableViewDataSource, NSTable
                                                 enabled: true)
                     actions.append(conversionAction)
                 }
-                
+
+                // TrueHD (Atmos) can be re-encoded to E-AC3 with Joint Object Coding
+                // (EAC3-JOC) through the external deezy/truehdd/dee pipeline.
+                if track.format == kMP42AudioCodecType_TrueHD {
+                    let atmosAction = Action(title: NSLocalizedString("EAC3-JOC (Dolby Atmos)", comment: "File Import action menu item."),
+                                             tag: Int(kFileImportAtmosActionTag),
+                                             enabled: true)
+                    actions.append(atmosAction)
+                }
+
             default:
                 break
             }
@@ -336,8 +349,18 @@ final class FileImportController: ViewController, NSTableViewDataSource, NSTable
         for trackSettings in settings where trackSettings.checked {
             switch trackSettings.track {
             case let track as MP42AudioTrack:
-                
-                if trackSettings.selectedActionTag > 0 {
+
+                if trackSettings.selectedActionTag == kFileImportAtmosActionTag {
+                    // Re-encode TrueHD Atmos to E-AC3 JOC. The heavy lifting happens
+                    // at save time in MP42File via the external deezy pipeline.
+                    track.conversionSettings = MP42AudioAtmosConversionSettings.atmosConversion(withBitRate: Prefs.atmosBitrate,
+                                                                                                atmosMode: Prefs.atmosMode,
+                                                                                                deezyPath: AtmosTools.deezyPath,
+                                                                                                truehddPath: AtmosTools.truehddPath,
+                                                                                                deePath: AtmosTools.deePath,
+                                                                                                ffmpegPath: AtmosTools.ffmpegPath)
+                }
+                else if trackSettings.selectedActionTag > 0 {
                     let bitRate = Prefs.audioBitrate
                     let drc = Prefs.audioDRC
                     let mixdown = Int64(trackSettings.selectedActionTag)
@@ -425,6 +448,30 @@ final class FileImportController: ViewController, NSTableViewDataSource, NSTable
             break
         case .track(let settings):
             settings.selectedActionTag = UInt(selectedItem.tag)
+            if selectedItem.tag == Int(kFileImportAtmosActionTag) {
+                warnIfAtmosToolsMissing()
+            }
+        }
+    }
+
+    /// Warns the user if the external tools required for EAC3-JOC conversion are
+    /// not configured, so the failure surfaces at selection time rather than
+    /// deep inside the save.
+    private func warnIfAtmosToolsMissing() {
+        let missing = AtmosTools.missingTools
+        guard missing.isEmpty == false else { return }
+
+        let alert = NSAlert()
+        alert.alertStyle = .warning
+        alert.messageText = NSLocalizedString("Dolby Atmos tools not configured", comment: "Atmos warning title.")
+        alert.informativeText = String(format: NSLocalizedString("EAC3-JOC conversion needs the following tool(s), which weren't found: %@.\n\nSet their paths in Settings ▸ Atmos before saving, otherwise the conversion will fail.", comment: "Atmos warning body."),
+                                       missing.joined(separator: ", "))
+        alert.addButton(withTitle: NSLocalizedString("OK", comment: ""))
+
+        if let window = view.window {
+            alert.beginSheetModal(for: window, completionHandler: nil)
+        } else {
+            alert.runModal()
         }
     }
 

@@ -56,6 +56,11 @@
                             <action selector="setPrefView:" target="-2" id="da5-1C-vGr"/>
                         </connections>
                     </toolbarItem>
+                    <toolbarItem implicitItemIdentifier="C1F2A3B4-1234-4ABC-9DEF-ATMOS0000001" explicitItemIdentifier="TOOLBAR_ATMOS" label="Atmos" paletteLabel="Atmos" tag="-1" image="NSAdvanced" sizingBehavior="auto" selectable="YES" id="atm-01-it0">
+                        <connections>
+                            <action selector="setPrefView:" target="-2" id="atm-01-ac0"/>
+                        </connections>
+                    </toolbarItem>
                 </allowedToolbarItems>
                 <defaultToolbarItems>
                     <toolbarItem reference="5r6-9s-apQ"/>
@@ -64,6 +69,7 @@
                     <toolbarItem reference="uxW-fx-zpe"/>
                     <toolbarItem reference="btg-Uy-o7I"/>
                     <toolbarItem reference="udf-m4-mG8"/>
+                    <toolbarItem reference="atm-01-it0"/>
                     <toolbarItem reference="R2N-58-umt"/>
                 </defaultToolbarItems>
             </toolbar>

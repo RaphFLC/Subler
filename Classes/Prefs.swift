@@ -78,7 +78,8 @@ enum Prefs {
                                _audioBitrate, _audioDRC, _audioConvertAC3, _audioKeepAC3, _audioConvertDts,
                                _audioDtsOptions, _subtitleConvertBitmap, _ratingsCountry, _chaptersPreviewPosition,
                                _chaptersPreviewTrack, _mp464bitOffset, _mp464bitTimes, _mp4SaveAsOptimize, _forceHvc1,
-                               _logFormat])
+                               _logFormat, _atmosDeezyPath, _atmosTruehddPath, _atmosDeePath, _atmosFFmpegPath,
+                               _atmosBitrate, _atmosMode])
     }
 
     @Stored(key: "NSApplicationCrashOnException", defaultValue: true)
@@ -161,6 +162,82 @@ enum Prefs {
 
     @Stored(key: "SBLogFormat", defaultValue: 0)
     static var logFormat: Int  // 0 = Time Only, 1 = Date and Time
+
+    // MARK: - TrueHD Atmos -> EAC3-JOC external tools
+
+    @Stored(key: "SBAtmosDeezyPath", defaultValue: "")
+    static var atmosDeezyPath: String
+
+    @Stored(key: "SBAtmosTruehddPath", defaultValue: "")
+    static var atmosTruehddPath: String
+
+    @Stored(key: "SBAtmosDeePath", defaultValue: "")
+    static var atmosDeePath: String
+
+    @Stored(key: "SBAtmosFFmpegPath", defaultValue: "")
+    static var atmosFFmpegPath: String
+
+    @Stored(key: "SBAtmosBitrate", defaultValue: 768)
+    static var atmosBitrate: UInt32
+
+    @Stored(key: "SBAtmosMode", defaultValue: "streaming")
+    static var atmosMode: String
+}
+
+/// Locates the external executables used to re-encode TrueHD Atmos to EAC3-JOC.
+/// `dee`/`ffmpeg` are auto-detected in common locations; `deezy`/`truehdd`
+/// usually need to be set manually in the Advanced preferences.
+enum AtmosTools {
+
+    /// Directories searched during auto-detection, in priority order.
+    static var searchDirectories: [String] {
+        var dirs = ["/opt/local/bin", "/opt/homebrew/bin", "/usr/local/bin", "/usr/bin", "/bin"]
+        if let resourceURL = Bundle.main.resourceURL {
+            dirs.append(resourceURL.path)
+            dirs.append(resourceURL.appendingPathComponent("Tools").path)
+        }
+        dirs.append(Bundle.main.bundleURL.deletingLastPathComponent().path)
+        return dirs
+    }
+
+    /// Returns the first executable named `name` found in the search directories.
+    static func detect(_ name: String) -> String? {
+        let fm = FileManager.default
+        for dir in searchDirectories {
+            let path = (dir as NSString).appendingPathComponent(name)
+            if fm.isExecutableFile(atPath: path) {
+                return path
+            }
+        }
+        return nil
+    }
+
+    /// Returns the stored path if set, otherwise an auto-detected one (may be empty).
+    static func resolved(_ stored: String, name: String) -> String {
+        if !stored.isEmpty {
+            return stored
+        }
+        return detect(name) ?? ""
+    }
+
+    static var deezyPath: String { resolved(Prefs.atmosDeezyPath, name: "deezy") }
+    static var truehddPath: String { resolved(Prefs.atmosTruehddPath, name: "truehdd") }
+    static var deePath: String { resolved(Prefs.atmosDeePath, name: "dee") }
+    static var ffmpegPath: String { resolved(Prefs.atmosFFmpegPath, name: "ffmpeg") }
+
+    /// True when all four tools resolve to an executable file.
+    static var isConfigured: Bool {
+        return missingTools.isEmpty
+    }
+
+    /// Names of the tools that are not set or not found as an executable.
+    static var missingTools: [String] {
+        let fm = FileManager.default
+        let tools: [(name: String, path: String)] = [
+            ("deezy", deezyPath), ("truehdd", truehddPath), ("dee", deePath), ("ffmpeg", ffmpegPath),
+        ]
+        return tools.filter { $0.path.isEmpty || !fm.isExecutableFile(atPath: $0.path) }.map { $0.name }
+    }
 }
 
 enum MetadataPrefs {
